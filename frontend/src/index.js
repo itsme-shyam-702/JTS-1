@@ -5,9 +5,9 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 
-// Use environment variable in production if possible
+// ✅ CRA uses process.env.REACT_APP_... not import.meta.env
 const PUBLISHABLE_KEY =
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  process.env.REACT_APP_CLERK_PUBLISHABLE_KEY ||
   "pk_test_bXV0dWFsLWNoaWNrZW4tODguY2xlcmsuYWNjb3VudHMuZGV2JA";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
