@@ -10,6 +10,8 @@ import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import AdmissionDashboard from "./pages/AdmissionDashboard";
 import InboxDashboard from "./pages/InboxDashboard";
+import { SignIn } from "@clerk/clerk-react";
+
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/inbox" element={<InboxDashboard />} />
+        
+          <Route path="/login" element={<SignIn />} />
         </Routes>
       </div>
     <Footer/>
