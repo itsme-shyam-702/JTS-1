@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { MoreVertical, Trash2 } from "lucide-react";
 import Swal from "sweetalert2";
-import { useUser } from "@clerk/clerk-react"; // 👈 Clerk user import
-import api from "../api/admission";
+import { useUser } from "@clerk/clerk-react"; // Clerk user
+import { useAdmissionAPI } from "../api/admission"; // ✅ Correct import
 
 // ✅ SweetAlert Toast
 const Toast = Swal.mixin({
@@ -20,7 +20,8 @@ const Toast = Swal.mixin({
 });
 
 function AdmissionDashboard() {
-  const { user, isLoaded } = useUser(); // Clerk user
+  const { user, isLoaded } = useUser(); // Clerk user info
+  const { getAdmissions, deleteAdmission } = useAdmissionAPI(); // ✅ Custom API hook
   const [admissions, setAdmissions] = useState([]);
   const [menuOpen, setMenuOpen] = useState(null);
 
@@ -33,7 +34,7 @@ function AdmissionDashboard() {
   useEffect(() => {
     const fetchAdmissions = async () => {
       try {
-        const res = await api.getAdmissions();
+        const res = await getAdmissions();
         setAdmissions(res.data);
       } catch (err) {
         console.error("Error fetching admissions:", err);
@@ -41,7 +42,7 @@ function AdmissionDashboard() {
       }
     };
     fetchAdmissions();
-  }, []);
+  }, [getAdmissions]);
 
   // 🗑 Delete admission (admin only)
   const handleDelete = async (id) => {
@@ -61,7 +62,7 @@ function AdmissionDashboard() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await api.deleteAdmission(id);
+          await deleteAdmission(id);
           setAdmissions((prev) => prev.filter((adm) => adm._id !== id));
           setMenuOpen(null);
           Toast.fire({
@@ -113,20 +114,29 @@ function AdmissionDashboard() {
           </thead>
           <tbody>
             {admissions.map((adm) => (
-              <tr key={adm._id} className="text-center relative hover:bg-gray-50 transition">
+              <tr
+                key={adm._id}
+                className="text-center relative hover:bg-gray-50 transition"
+              >
                 <td className="border px-4 py-2">{adm.name}</td>
                 <td className="border px-4 py-2">{adm.selectedClass}</td>
-                <td className="border px-4 py-2">{new Date(adm.dob).toLocaleDateString()}</td>
+                <td className="border px-4 py-2">
+                  {new Date(adm.dob).toLocaleDateString()}
+                </td>
                 <td className="border px-4 py-2">{adm.parentName}</td>
                 <td className="border px-4 py-2">{adm.contact}</td>
                 <td className="border px-4 py-2">{adm.address}</td>
-                <td className="border px-4 py-2">{new Date(adm.createdAt).toLocaleString()}</td>
+                <td className="border px-4 py-2">
+                  {new Date(adm.createdAt).toLocaleString()}
+                </td>
 
                 {/* 👑 Only Admin can delete */}
                 {isAdmin && (
                   <td className="border px-4 py-2 relative">
                     <button
-                      onClick={() => setMenuOpen(menuOpen === adm._id ? null : adm._id)}
+                      onClick={() =>
+                        setMenuOpen(menuOpen === adm._id ? null : adm._id)
+                      }
                       className="p-1 rounded hover:bg-gray-200 transition"
                     >
                       <MoreVertical size={18} />

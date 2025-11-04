@@ -1,16 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter } from "react-router-dom";
+import { ClerkProvider } from "@clerk/clerk-react";
 import "./index.css";
 
-// ✅ CRA uses process.env.REACT_APP_... not import.meta.env
-const PUBLISHABLE_KEY =
-  process.env.REACT_APP_CLERK_PUBLISHABLE_KEY ||
-  "pk_test_bXV0dWFsLWNoaWNrZW4tODguY2xlcmsuYWNjb3VudHMuZGV2JA";
+const PUBLISHABLE_KEY = "pk_test_bXV0dWFsLWNoaWNrZW4tODguY2xlcmsuYWNjb3VudHMuZGV2JA"; // <-- your Clerk key
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+
 root.render(
   <React.StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
