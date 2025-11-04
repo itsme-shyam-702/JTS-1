@@ -2,13 +2,21 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 
-const PUBLISHABLE_KEY = "pk_test_bXV0dWFsLWNoaWNrZW4tODguY2xlcmsuYWNjb3VudHMuZGV2JA"; // <-- replace with your actual key
+// Use environment variable in production if possible
+const PUBLISHABLE_KEY =
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  "pk_test_bXV0dWFsLWNoaWNrZW4tODguY2xlcmsuYWNjb3VudHMuZGV2JA";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-    <App />
-  </ClerkProvider>
+  <React.StrictMode>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ClerkProvider>
+  </React.StrictMode>
 );
