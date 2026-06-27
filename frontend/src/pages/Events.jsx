@@ -1,31 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useUser } from "@clerk/clerk-react";
 import Swal from "sweetalert2";
-import api from "../api/events"; // ✅ Fixed: use events-specific API
+import api from "../api/events";
+
+const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASS || "admin123";
 
 export default function Events() {
-  const { user } = useUser();
-  const userEmail = user?.primaryEmailAddress?.emailAddress || "";
-  const isAdmin = userEmail === "sssshyam702@gmail.com";
-
+  const [isAdmin, setIsAdmin] = useState(
+    () => localStorage.getItem("eventsAdmin") === "true"
+  );
   const [events, setEvents] = useState([]);
   const [recentlyDeleted, setRecentlyDeleted] = useState([]);
   const [selected, setSelected] = useState([]);
   const [showDeleted, setShowDeleted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [menuOpen, setMenuOpen] = useState(null);
-  const [lightbox, setLightbox] = useState(null); // for image preview
+  const [lightbox, setLightbox] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
   const [newEvent, setNewEvent] = useState({ title: "", description: "", date: "", file: null });
 
-  useEffect(() => {
-    fetchEvents();
-    fetchDeletedEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchEvents(); fetchDeletedEvents(); }, []);
 
   const fetchEvents = async () => {
     try {
@@ -45,6 +40,27 @@ export default function Events() {
       setRecentlyDeleted(res.data);
     } catch (err) {
       console.error("fetchDeletedEvents error", err);
+    }
+  };
+
+  const handleAdminToggle = async () => {
+    if (isAdmin) {
+      localStorage.removeItem("eventsAdmin");
+      setIsAdmin(false);
+      return;
+    }
+    const { value: pass } = await Swal.fire({
+      title: "Admin Access",
+      input: "password",
+      inputLabel: "Enter admin password",
+      inputPlaceholder: "Password",
+      showCancelButton: true,
+    });
+    if (pass === ADMIN_PASS) {
+      localStorage.setItem("eventsAdmin", "true");
+      setIsAdmin(true);
+    } else if (pass !== undefined) {
+      Swal.fire("Wrong Password", "", "error");
     }
   };
 
@@ -69,7 +85,6 @@ export default function Events() {
       formData.append("description", newEvent.description);
       formData.append("date", newEvent.date);
       if (newEvent.file) formData.append("file", newEvent.file);
-
       const res = await api.add(formData);
       setEvents((prev) => [res.data, ...prev]);
       setNewEvent({ title: "", description: "", date: "", file: null });
@@ -105,16 +120,13 @@ export default function Events() {
     if (!selected.length) return;
     confirmDelete(`Delete ${selected.length} selected event(s)?`, async () => {
       await Promise.all(selected.map((id) => api.softDelete(id)));
-      await fetchEvents();
-      await fetchDeletedEvents();
-      setSelected([]);
+      await fetchEvents(); await fetchDeletedEvents(); setSelected([]);
     });
   };
 
   const handleRestore = async (id) => {
     await api.restore(id);
-    await fetchEvents();
-    await fetchDeletedEvents();
+    await fetchEvents(); await fetchDeletedEvents();
     Swal.fire({ icon: "success", title: "Restored!", timer: 1500, showConfirmButton: false });
   };
 
@@ -139,12 +151,12 @@ export default function Events() {
       if (navigator.share) {
         await navigator.share({ title: ev.title, text: ev.description || ev.title, url: link });
       } else {
-        await navigator.clipboard.writeText(link);
+        await navigator.clipboard.writeText(window.location.origin + link);
         Swal.fire({ icon: "info", title: "Link Copied!", timer: 1500, showConfirmButton: false });
       }
     } catch {
       try {
-        await navigator.clipboard.writeText(link);
+        await navigator.clipboard.writeText(window.location.href);
         Swal.fire({ icon: "info", title: "Link Copied!", timer: 1500, showConfirmButton: false });
       } catch (e) {
         console.error("share failed", e);
@@ -170,7 +182,6 @@ export default function Events() {
       <div className="max-w-7xl mx-auto py-10 px-4">
         {/* Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-          {/* Search */}
           <input
             type="text"
             placeholder="🔍 Search events..."
@@ -195,6 +206,9 @@ export default function Events() {
                 </button>
               </>
             )}
+            <button onClick={handleAdminToggle} className={`px-4 py-2 rounded-xl text-sm font-semibold shadow transition ${isAdmin ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>
+              {isAdmin ? "🔓 Admin" : "🔒 Admin"}
+            </button>
           </div>
         </div>
 
@@ -226,9 +240,7 @@ export default function Events() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className={`relative bg-white border-2 rounded-xl shadow hover:shadow-lg transition-all overflow-hidden group cursor-pointer ${
-                    isSelected ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-100"
-                  }`}
+                  className={`relative bg-white border-2 rounded-xl shadow hover:shadow-lg transition-all overflow-hidden group cursor-pointer ${isSelected ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-100"}`}
                   onClick={() => {
                     if (isAdmin) {
                       setSelected((prev) =>
@@ -237,7 +249,6 @@ export default function Events() {
                     }
                   }}
                 >
-                  {/* Thumbnail */}
                   <div
                     className="h-40 bg-gray-100 relative overflow-hidden"
                     onClick={(e) => {
@@ -257,7 +268,6 @@ export default function Events() {
                       <div className="flex items-center justify-center w-full h-full text-gray-300 text-sm">No File</div>
                     )}
 
-                    {/* Overlay menu button */}
                     <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setMenuOpen(menuOpen === ev._id ? null : ev._id)}
@@ -294,18 +304,13 @@ export default function Events() {
       <AnimatePresence>
         {lightbox && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
           >
             <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              className="relative max-w-3xl w-full"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
+              className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setLightbox(null)} className="absolute -top-10 right-0 text-white text-2xl hover:text-yellow-300">✕</button>
               <img

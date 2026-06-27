@@ -1,7 +1,6 @@
 import express from "express";
 import multer from "multer";
 import Gallery from "../models/Gallery.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -11,20 +10,28 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ✅ Get all
-router.get("/", requireAuth, requireRole(["visitor", "staff", "admin"]), async (req, res) => {
-  const images = await Gallery.find({ deleted: false }).sort({ createdAt: -1 });
-  res.json(images);
+// GET all active images (public)
+router.get("/", async (req, res) => {
+  try {
+    const images = await Gallery.find({ deleted: false }).sort({ createdAt: -1 });
+    res.json(images);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Get deleted
-router.get("/deleted", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  const deleted = await Gallery.find({ deleted: true });
-  res.json(deleted);
+// GET deleted images
+router.get("/deleted", async (req, res) => {
+  try {
+    const deleted = await Gallery.find({ deleted: true });
+    res.json(deleted);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Upload new
-router.post("/", requireAuth, requireRole(["staff", "admin"]), upload.single("file"), async (req, res) => {
+// POST upload new image
+router.post("/", upload.single("file"), async (req, res) => {
   try {
     const { title, description } = req.body;
     const filePath = req.file ? `/uploads/${req.file.filename}` : "";
@@ -36,22 +43,34 @@ router.post("/", requireAuth, requireRole(["staff", "admin"]), upload.single("fi
   }
 });
 
-// ✅ Soft delete
-router.patch("/delete/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Gallery.findByIdAndUpdate(req.params.id, { deleted: true });
-  res.json({ message: "Image soft deleted" });
+// PATCH soft delete
+router.patch("/delete/:id", async (req, res) => {
+  try {
+    await Gallery.findByIdAndUpdate(req.params.id, { deleted: true });
+    res.json({ message: "Image soft deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Restore
-router.patch("/restore/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Gallery.findByIdAndUpdate(req.params.id, { deleted: false });
-  res.json({ message: "Image restored" });
+// PATCH restore
+router.patch("/restore/:id", async (req, res) => {
+  try {
+    await Gallery.findByIdAndUpdate(req.params.id, { deleted: false });
+    res.json({ message: "Image restored" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Permanent delete
-router.delete("/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Gallery.findByIdAndDelete(req.params.id);
-  res.json({ message: "Image permanently deleted" });
+// DELETE permanent
+router.delete("/:id", async (req, res) => {
+  try {
+    await Gallery.findByIdAndDelete(req.params.id);
+    res.json({ message: "Image permanently deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 export default router;

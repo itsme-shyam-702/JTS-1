@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
-import { useAdmissionAPI } from "../api/admission";
+import admissionAPI from "../api/admission";
 
 function useInView(threshold = 0.2) {
   const ref = useRef(null);
@@ -28,7 +28,6 @@ export default function Admissions() {
     message: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const { submitAdmission } = useAdmissionAPI();
   const [formRef, formInView] = useInView(0.1);
 
   const handleChange = (e) => {
@@ -52,7 +51,7 @@ export default function Admissions() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const response = await submitAdmission(formData);
+      const response = await admissionAPI.submitAdmission(formData);
       if (response.status === 200 || response.status === 201) {
         Swal.fire({
           title: "Application Submitted! 🎉",
@@ -94,20 +93,12 @@ export default function Admissions() {
             />
             {STEPS.map((label, i) => (
               <div key={i} className="relative z-10 flex flex-col items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                    i < step
-                      ? "bg-green-500 text-white"
-                      : i === step
-                      ? "bg-blue-600 text-white ring-4 ring-blue-100"
-                      : "bg-gray-200 text-gray-500"
-                  }`}
-                >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  i < step ? "bg-green-500 text-white" : i === step ? "bg-blue-600 text-white ring-4 ring-blue-100" : "bg-gray-200 text-gray-500"
+                }`}>
                   {i < step ? "✓" : i + 1}
                 </div>
-                <span className={`text-xs mt-1.5 font-medium ${i === step ? "text-blue-600" : "text-gray-400"}`}>
-                  {label}
-                </span>
+                <span className={`text-xs mt-1.5 font-medium ${i === step ? "text-blue-600" : "text-gray-400"}`}>{label}</span>
               </div>
             ))}
           </div>
@@ -115,9 +106,7 @@ export default function Admissions() {
           {/* Form Card */}
           <div
             ref={formRef}
-            className={`bg-white rounded-2xl shadow-xl p-8 border border-gray-100 transition-all duration-700 ${
-              formInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
+            className={`bg-white rounded-2xl shadow-xl p-8 border border-gray-100 transition-all duration-700 ${formInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
           >
             {step === 0 && (
               <div className="space-y-5">
@@ -175,20 +164,12 @@ export default function Admissions() {
             {/* Navigation Buttons */}
             <div className={`flex mt-8 ${step > 0 ? "justify-between" : "justify-end"}`}>
               {step > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStep((s) => s - 1)}
-                  className="px-6 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
+                <button type="button" onClick={() => setStep((s) => s - 1)} className="px-6 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-all">
                   ← Back
                 </button>
               )}
               {step < STEPS.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all hover:scale-105 shadow"
-                >
+                <button type="button" onClick={nextStep} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all hover:scale-105 shadow">
                   Next →
                 </button>
               ) : (

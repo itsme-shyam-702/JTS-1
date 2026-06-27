@@ -1,102 +1,62 @@
-# Government Junior Technical School — Web Application
+# Junior Technical School — Full Stack Project
 
-## Overview
-Full-stack web application for Govt. Junior Technical School Kadri, Mangaluru.
+## What was fixed (Auth Removal Update)
 
-- **Frontend**: React 18 + Tailwind CSS + Framer Motion + Clerk Auth
-- **Backend**: Node.js + Express 5 + MongoDB + Multer
+### Root problems resolved:
+1. **401 Unauthorized** — All routes were protected by Clerk auth middleware. Removed Clerk entirely.
+2. **404 errors** — Admission API had a hardcoded `onrender.com` URL. Changed to relative `/api/admission`.
+3. **Form field mismatch** — Admission form sent `name/email/phone/course/message` but model expected `name/selectedClass/dob/parentName/contact/address`. Admission model updated to accept both sets of fields.
+4. **ClerkProvider crash** — `index.js` wrapped app in `<ClerkProvider>`. Removed.
+5. **Navbar Clerk crash** — Navbar used `SignedIn`, `SignedOut`, `UserButton` from Clerk. Replaced with simple links.
 
----
-
-## Bug Fixes Applied
-
-### Critical
-1. **`App.js`** — Removed stray URL comment left in source code
-2. **`Events.jsx`** — Fixed wrong API import (`../api/api` → `../api/events`); the old code was calling `/api/` instead of `/api/events/`
-3. **`About.jsx`** — Fixed broken route link (`/Admissions` → `/admissions`, React Router is case-sensitive)
-4. **`frontend/package.json`** — Removed backend packages (express, mongoose, cors, dotenv) incorrectly listed as frontend dependencies
-
-### UI/UX
-5. **`Navbar.jsx`** — Added mobile hamburger menu (missing entirely), active link indicator, scroll shadow
-6. **`Gallery.jsx`** — Fixed image URL resolution (missing backend prefix for relative paths)
-7. **`App.js`** — Added `ScrollToTop` component so pages scroll to top on navigation
+### Admin access (no auth):
+Gallery, Events, and AdmissionDashboard now have a **🔒 Admin** button.
+- Default password: `admin123`
+- Change it by setting `REACT_APP_ADMIN_PASS=yourpassword` in `frontend/.env`
+- Admin state persists in `localStorage` per page
 
 ---
 
-## New Features & Enhancements
+## Setup & Run
 
-### Home Page
-- **Animated hero** with fade-in text + entrance transitions
-- **Floating particle effects** in background
-- **Animated stats counter** (Years, Books, Grades, Funding) with IntersectionObserver
-- **Feature cards** with staggered scroll-reveal animations
-- **CTA section** at bottom
-
-### About Page
-- Scroll-reveal animations for all sections
-- **Info grid** (Est., Grades, Library Books, Management)
-- Better image layout with glow effect
-
-### Admissions Page
-- **Multi-step form** (3 steps: Personal → Course → Review) with progress indicator
-- Step validation before proceeding
-- Submission loading state
-
-### Contact Page
-- **Contact info cards** (address, phone, email, hours)
-- Relocated map from background to inline card
-- Form slide-in animation
-
-### Events Page
-- **Search/filter** bar for events
-- **Image lightbox** with click-to-preview
-- **Skeleton loading** placeholders while fetching
-- Preview option in dropdown menu
-
-### Gallery Page
-- **Lightbox** with keyboard navigation (← → Escape)
-- Image count indicator
-- Skeleton loading grid
-- Fixed image URL path resolution
-
-### Navbar
-- **Responsive hamburger menu** for mobile
-- **Active route highlighting** with underline
-- Smooth shadow transition on scroll
-
----
-
-## Setup & Deploy
-
-### Backend (Render / any Node host)
+### Backend
 ```bash
 cd backend
 npm install
-# Set .env: MONGODB_URI, PORT, NODE_ENV=production
-node server.js
+npm run dev        # runs on http://localhost:5000
 ```
 
-### Frontend (build)
+### Frontend
 ```bash
 cd frontend
 npm install
-npm run build
+npm start          # runs on http://localhost:3000
 ```
 
-The backend serves the frontend build in production mode (`NODE_ENV=production`).
+Make sure the `backend/uploads/` folder exists (auto-created on first upload).
 
----
+### Pages
+| Route | Description |
+|---|---|
+| `/` | Home |
+| `/about` | About school |
+| `/admissions` | Submit admission form |
+| `/dashboard` | View all admissions (Admin toggle) |
+| `/events` | Events & circulars (Admin toggle for add/delete) |
+| `/gallery` | Photo gallery (Admin toggle for add/delete) |
+| `/contact` | Contact form |
+| `/inbox` | View contact messages |
 
-## Environment Variables
+### Environment Variables
 
 **backend/.env**
 ```
-MONGODB_URI=mongodb+srv://...
+MONGO_URI=your_mongodb_uri
 PORT=5000
-NODE_ENV=production
 ```
 
-**frontend/.env** (optional, for local dev)
+**frontend/.env**
 ```
 REACT_APP_BACKEND_URL=http://localhost:5000
+REACT_APP_ADMIN_PASS=admin123
 ```

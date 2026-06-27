@@ -1,37 +1,41 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
 import Event from "../models/Event.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// ✅ Public (visitor/staff/admin)
-router.get("/", requireAuth, requireRole(["visitor", "staff", "admin"]), async (req, res) => {
-  const events = await Event.find({ deleted: false }).sort({ date: -1 });
-  res.json(events);
+// GET all active events (public)
+router.get("/", async (req, res) => {
+  try {
+    const events = await Event.find({ deleted: false }).sort({ date: -1 });
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Deleted (staff/admin)
-router.get("/deleted", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  const events = await Event.find({ deleted: true });
-  res.json(events);
+// GET deleted events
+router.get("/deleted", async (req, res) => {
+  try {
+    const events = await Event.find({ deleted: true });
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Add new (staff/admin)
-router.post("/", requireAuth, requireRole(["staff", "admin"]), upload.single("file"), async (req, res) => {
+// POST add new event
+router.post("/", upload.single("file"), async (req, res) => {
   try {
     const { title, description, date } = req.body;
     const filePath = req.file ? `/uploads/${req.file.filename}` : "";
     const fileType = req.file ? req.file.mimetype.split("/")[0] : "";
-
     const event = await Event.create({ title, description, date, filePath, fileType });
     res.status(201).json(event);
   } catch (err) {
@@ -39,22 +43,34 @@ router.post("/", requireAuth, requireRole(["staff", "admin"]), upload.single("fi
   }
 });
 
-// ✅ Soft delete
-router.patch("/delete/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Event.findByIdAndUpdate(req.params.id, { deleted: true });
-  res.json({ message: "Event soft deleted" });
+// PATCH soft delete
+router.patch("/delete/:id", async (req, res) => {
+  try {
+    await Event.findByIdAndUpdate(req.params.id, { deleted: true });
+    res.json({ message: "Event soft deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Restore
-router.patch("/restore/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Event.findByIdAndUpdate(req.params.id, { deleted: false });
-  res.json({ message: "Event restored" });
+// PATCH restore
+router.patch("/restore/:id", async (req, res) => {
+  try {
+    await Event.findByIdAndUpdate(req.params.id, { deleted: false });
+    res.json({ message: "Event restored" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// ✅ Permanent delete
-router.delete("/:id", requireAuth, requireRole(["staff", "admin"]), async (req, res) => {
-  await Event.findByIdAndDelete(req.params.id);
-  res.json({ message: "Event permanently deleted" });
+// DELETE permanent
+router.delete("/:id", async (req, res) => {
+  try {
+    await Event.findByIdAndDelete(req.params.id);
+    res.json({ message: "Event permanently deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 export default router;

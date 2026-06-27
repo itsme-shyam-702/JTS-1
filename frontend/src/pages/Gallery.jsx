@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
-import { useUser } from "@clerk/clerk-react";
 import api from "../api/gallery";
 
 const Toast = Swal.mixin({
@@ -18,8 +17,10 @@ function getImgSrc(filePath) {
   return `${BACKEND}/${filePath}`;
 }
 
+// Simple admin check - set REACT_APP_ADMIN_PASS in .env or use a toggle
+const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASS || "admin123";
+
 export default function Gallery() {
-  const { user } = useUser();
   const [images, setImages] = useState([]);
   const [recentlyDeleted, setRecentlyDeleted] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -29,14 +30,11 @@ export default function Gallery() {
   const [lightbox, setLightbox] = useState(null);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [newImage, setNewImage] = useState({ file: null, title: "", description: "" });
+  const [isAdminOrStaff, setIsAdminOrStaff] = useState(
+    () => localStorage.getItem("galleryAdmin") === "true"
+  );
 
-  const userRole = user?.publicMetadata?.role;
-  const isAdminOrStaff = userRole === "admin" || userRole === "staff";
-
-  useEffect(() => {
-    fetchImages();
-    fetchDeletedImages();
-  }, []);
+  useEffect(() => { fetchImages(); fetchDeletedImages(); }, []);
 
   const fetchImages = async () => {
     try {
@@ -59,6 +57,28 @@ export default function Gallery() {
     }
   };
 
+  const handleAdminToggle = async () => {
+    if (isAdminOrStaff) {
+      localStorage.removeItem("galleryAdmin");
+      setIsAdminOrStaff(false);
+      return;
+    }
+    const { value: pass } = await Swal.fire({
+      title: "Admin Access",
+      input: "password",
+      inputLabel: "Enter admin password",
+      inputPlaceholder: "Password",
+      showCancelButton: true,
+    });
+    if (pass === ADMIN_PASS) {
+      localStorage.setItem("galleryAdmin", "true");
+      setIsAdminOrStaff(true);
+      Toast.fire({ icon: "success", title: "Admin mode enabled" });
+    } else if (pass !== undefined) {
+      Swal.fire("Wrong Password", "", "error");
+    }
+  };
+
   const handleAddImage = async () => {
     if (!newImage.file) {
       Swal.fire("No File!", "Please select an image file.", "warning");
@@ -69,7 +89,6 @@ export default function Gallery() {
       formData.append("file", newImage.file);
       formData.append("title", newImage.title || "Untitled");
       formData.append("description", newImage.description || "");
-
       const res = await api.add(formData);
       setImages((prev) => [res.data, ...prev]);
       setNewImage({ file: null, title: "", description: "" });
@@ -140,10 +159,7 @@ export default function Gallery() {
     setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
   };
 
-  const openLightbox = (img, idx) => {
-    setLightbox(img);
-    setLightboxIdx(idx);
-  };
+  const openLightbox = (img, idx) => { setLightbox(img); setLightboxIdx(idx); };
 
   const navLightbox = (dir) => {
     const newIdx = (lightboxIdx + dir + images.length) % images.length;
@@ -151,7 +167,6 @@ export default function Gallery() {
     setLightbox(images[newIdx]);
   };
 
-  // Keyboard nav in lightbox
   useEffect(() => {
     if (!lightbox) return;
     const handler = (e) => {
@@ -175,21 +190,26 @@ export default function Gallery() {
         {/* Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
           <p className="text-sm text-gray-500">{images.length} photo{images.length !== 1 ? "s" : ""}</p>
-          {isAdminOrStaff && (
-            <div className="flex gap-3 flex-wrap">
-              {selected.length > 0 && (
-                <button onClick={handleDeleteSelected} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
-                  Delete ({selected.length})
+          <div className="flex gap-3 flex-wrap items-center">
+            {isAdminOrStaff && selected.length > 0 && (
+              <button onClick={handleDeleteSelected} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
+                Delete ({selected.length})
+              </button>
+            )}
+            {isAdminOrStaff && (
+              <>
+                <button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
+                  + Add Image
                 </button>
-              )}
-              <button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
-                + Add Image
-              </button>
-              <button onClick={() => setShowDeleted((s) => !s)} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
-                {showDeleted ? "Hide Deleted" : "Recently Deleted"}
-              </button>
-            </div>
-          )}
+                <button onClick={() => setShowDeleted((s) => !s)} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition">
+                  {showDeleted ? "Hide Deleted" : "Recently Deleted"}
+                </button>
+              </>
+            )}
+            <button onClick={handleAdminToggle} className={`px-4 py-2 rounded-xl text-sm font-semibold shadow transition ${isAdminOrStaff ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>
+              {isAdminOrStaff ? "🔓 Admin" : "🔒 Admin"}
+            </button>
+          </div>
         </div>
 
         {/* Masonry Grid */}
@@ -212,13 +232,8 @@ export default function Gallery() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.03 }}
-                className={`relative overflow-hidden rounded-lg break-inside-avoid group cursor-pointer transition-all ${
-                  selected.includes(img._id) ? "ring-4 ring-blue-500" : ""
-                }`}
-                onClick={() => {
-                  if (isAdminOrStaff) toggleSelect(img._id);
-                  else openLightbox(img, idx);
-                }}
+                className={`relative overflow-hidden rounded-lg break-inside-avoid group cursor-pointer transition-all ${selected.includes(img._id) ? "ring-4 ring-blue-500" : ""}`}
+                onClick={() => { if (isAdminOrStaff) toggleSelect(img._id); else openLightbox(img, idx); }}
               >
                 <img
                   src={getImgSrc(img.filePath)}
@@ -226,23 +241,14 @@ export default function Gallery() {
                   className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-400"
                   onError={(e) => { e.target.style.display = "none"; }}
                 />
-                {/* Hover overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2">
                   <p className="text-white text-xs font-semibold truncate">{img.title}</p>
                   {img.description && <p className="text-gray-300 text-xs truncate">{img.description}</p>}
                 </div>
-
-                {/* Preview + Delete buttons */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition flex gap-1">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openLightbox(img, idx); }}
-                    className="bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-lg hover:bg-white shadow"
-                  >🔍</button>
+                  <button onClick={(e) => { e.stopPropagation(); openLightbox(img, idx); }} className="bg-white/80 text-gray-800 text-xs px-2 py-1 rounded-lg hover:bg-white shadow">🔍</button>
                   {isAdminOrStaff && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteSingle(img._id); }}
-                      className="bg-red-500 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-600 shadow"
-                    >✕</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteSingle(img._id); }} className="bg-red-500 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-600 shadow">✕</button>
                   )}
                 </div>
               </motion.div>

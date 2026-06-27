@@ -14,32 +14,38 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// ✅ CORS — allow frontend origin from .env
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,   // add FRONTEND_URL=https://your-app.vercel.app in backend .env
+].filter(Boolean);
+
 app.use(cors({
-    origin: [
-      "http://localhost:3000",
-      "https://jr-school-mangalore.onrender.com",
-    ],
-    credentials: true,
-  }));
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// Static uploads
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// API Routes
 app.use("/api/admission", admissionRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/contact", contactRoutes);
 
-// Serve frontend build on Render (Express 5 safe)
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../frontend/build");
   app.use(express.static(frontendPath));
-
-  // ✅ FIXED catch-all for React Router
   app.use((req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
@@ -47,6 +53,5 @@ if (process.env.NODE_ENV === "production") {
   app.get("/", (_, res) => res.send("Server running in development mode"));
 }
 
-// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

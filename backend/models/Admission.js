@@ -3,11 +3,15 @@ import mongoose from "mongoose";
 const admissionSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    selectedClass: { type: String, required: true },
-    dob: { type: Date, required: true },
-    parentName: { type: String, required: true },
-    contact: { type: String, required: true },
-    address: { type: String, required: true },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    selectedClass: { type: String, default: "" },
+    course: { type: String, default: "" },
+    dob: { type: String, default: "" },
+    parentName: { type: String, default: "" },
+    contact: { type: String, default: "" },
+    address: { type: String, default: "" },
+    message: { type: String, default: "" },
   },
   { timestamps: true }
 );
