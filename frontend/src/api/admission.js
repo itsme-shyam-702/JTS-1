@@ -5,7 +5,7 @@ export const useAdmissionAPI = () => {
   const { getToken } = useAuth();
 
   const api = axios.create({
-    baseURL: "https://junior-school-67nt.onrender.com/api/admission",
+    baseURL: "https://junior-technical-school-l97z.onrender.com/api/admission",
   });
 
   api.interceptors.request.use(async (config) => {
