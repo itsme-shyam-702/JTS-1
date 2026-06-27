@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -11,9 +12,19 @@ import AdmissionDashboard from "./pages/AdmissionDashboard";
 import InboxDashboard from "./pages/InboxDashboard";
 import { SignIn } from "@clerk/clerk-react";
 
+// Scroll to top on every route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pathname]);
+  return null;
+}
+
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
+      <ScrollToTop />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -32,7 +43,3 @@ function App() {
 }
 
 export default App;
-
-
-
-// https://jr-school-67nt.onrender.com

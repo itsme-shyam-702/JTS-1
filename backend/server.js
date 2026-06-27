@@ -14,7 +14,13 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: [
+      "http://localhost:3000",
+      "https://your-frontend.onrender.com",
+    ],
+    credentials: true,
+  }));
 app.use(express.json());
 
 // Static uploads
